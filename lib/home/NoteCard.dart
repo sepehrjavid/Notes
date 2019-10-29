@@ -63,7 +63,9 @@ class NoteCard extends StatelessWidget {
                 ],
               ),
               SizedBox(height: 7),
-              Text(_note.body.substring(0, 7) + "...")
+              _note.body.length <= 30
+                  ? Text(_note.body.substring(0, _note.body.length))
+                  : Text(_note.body.substring(0, 31) + "...")
             ],
           ),
         ),
@@ -101,7 +103,7 @@ class NoteCard extends StatelessWidget {
           caption: 'Delete',
           color: Colors.red,
           icon: Icons.delete,
-          onTap: () => _deleteNote(_note),
+          onTap: () => _deleteNote(_note, context),
         ),
       ],
     );

@@ -1,20 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:notes/home/CategoryCard.dart';
 import 'package:notes/home/NoteCard.dart';
 import 'package:notes/services/Note.dart';
+import 'dart:math' as math;
+import 'Heading.dart';
 
 class Home extends StatefulWidget {
   @override
   _HomeState createState() => _HomeState();
 }
 
-class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
-  Map categories = {"work": 250, "personal": 10, "poems": 5, "simple text": 5};
-  List notes = [
+class _HomeState extends State<Home> with TickerProviderStateMixin {
+  Map<String, List> _categories = {"work": [], "personal": [], "poems": []};
+  int _selectedCategoryIndex = 0;
+  int _selectedTabIndex = 0;
+  TabController _tabController;
+  AnimationController _animationController;
+  List _floatingButtonIcons = [Icons.note_add, Icons.category];
+
+  static const int PERFORMED = 2;
+  static const int NOTES = 0;
+  static const int IMPORTANT = 1;
+
+  List _notes = [
     Note(
       "first note",
       "I'm the first note and I'd like to be the longest note ever on a test",
+      "work",
       DateTime.now(),
       true,
       false,
@@ -22,6 +34,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     Note(
       "second note",
       "I'm the second note",
+      "personal",
       DateTime.now().add(
         Duration(hours: -2),
       ),
@@ -31,6 +44,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     Note(
       "third note",
       "Third note",
+      "poems",
       DateTime.now(),
       true,
       false,
@@ -38,22 +52,46 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     Note(
       "fourth note",
       "I'm the fourth note and I'd like to be the longest note ever on a test",
+      "work",
       DateTime.now(),
       false,
       false,
     ),
   ];
-  int _selectedCategoryIndex = 0;
 
-  TabController _tabController;
+  void _getNotesData() {
+    _notes.forEach((element) {
+      _categories[element.category].add(element);
+    });
+    _notes.clear();
+  }
 
-//  final DateFormat _dateFormatter = DateFormat("dd MMM");
-  final DateFormat _timeFormatter = DateFormat("h:mm");
+  List _getNoteBySelectedTab() {
+    if (_selectedTabIndex == PERFORMED) {
+      return _categories.values
+          .toList()[_selectedCategoryIndex]
+          .where((element) => element.isPerformed)
+          .toList();
+    } else if (_selectedTabIndex == IMPORTANT) {
+      return _categories.values
+          .toList()[_selectedCategoryIndex]
+          .where((element) => element.isImportant)
+          .toList();
+    } else if (_selectedTabIndex == NOTES) {
+      return _categories.values.toList()[_selectedCategoryIndex];
+    }
+    return [];
+  }
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(initialIndex: 0, length: 3, vsync: this);
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _getNotesData();
   }
 
   Widget _buildCategoryCard(int index, String title, int count) {
@@ -68,14 +106,32 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   }
 
   Widget categoryItemBuilder(BuildContext context, int index) {
-    return _buildCategoryCard(index, categories.keys.toList()[index],
-        categories.values.toList()[index]);
+    return _buildCategoryCard(index, _categories.keys.toList()[index],
+        _categories.values.toList()[index].length);
   }
 
-  void _deleteNote(Note note) {
+  void _deleteNote(Note note, BuildContext context) {
+    int index =
+        _categories.values.toList()[_selectedCategoryIndex].indexOf(note);
     setState(() {
-      notes.remove(note);
+      _categories.values.toList()[_selectedCategoryIndex].remove(note);
     });
+    Scaffold.of(context).showSnackBar(SnackBar(
+      content: Text(
+        "${note.title} deleted!",
+        style: TextStyle(fontSize: 16),
+      ),
+      action: SnackBarAction(
+        label: "Undo",
+        onPressed: () {
+          setState(() {
+            _categories.values
+                .toList()[_selectedCategoryIndex]
+                .insert(index, note);
+          });
+        },
+      ),
+    ));
   }
 
   void _toggleImportant(Note note) {
@@ -90,48 +146,69 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     });
   }
 
+  Widget _generateFloatingButtonIconList(int index) {
+    Widget child = Container(
+      height: 70.0,
+      width: 56.0,
+      alignment: FractionalOffset.topCenter,
+      child: ScaleTransition(
+        scale: CurvedAnimation(
+          parent: _animationController,
+          curve: Interval(
+              0.0, 1.0 - index / _floatingButtonIcons.length / 2.0,
+              curve: Curves.easeOut),
+        ),
+        child: FloatingActionButton(
+          heroTag: null,
+          backgroundColor: Colors.teal[400],
+          mini: true,
+          child: Icon(_floatingButtonIcons[index], color: Colors.white),
+          onPressed: () {},
+        ),
+      ),
+    );
+    return child;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(
+                _floatingButtonIcons.length, _generateFloatingButtonIconList)
+            .toList()
+              ..add(FloatingActionButton(
+                heroTag: null,
+                child: AnimatedBuilder(
+                  animation: _animationController,
+                  builder: (BuildContext context, Widget child) {
+                    return Transform(
+                      transform: new Matrix4.rotationZ(_animationController.value * 0.5 * math.pi),
+                      alignment: FractionalOffset.center,
+                      child: Icon(_animationController.isDismissed ? Icons.add : Icons.close),
+                    );
+                  },
+                ),
+                onPressed: () {
+                  if (_animationController.isDismissed) {
+                    _animationController.forward();
+                  } else {
+                    _animationController.reverse();
+                  }
+                },
+              )),
+      ),
       backgroundColor: Colors.grey[300],
       body: ListView(
         children: <Widget>[
           SizedBox(height: 20),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: <Widget>[
-                Container(
-                  height: 40,
-                  width: 40,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    image: DecorationImage(
-                      fit: BoxFit.fill,
-                      image: AssetImage("assets/slm.png"),
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  width: 20,
-                ),
-                Text(
-                  "Sepehr Javid",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                )
-              ],
-            ),
-          ),
-          SizedBox(height: 20),
+          Heading(),
           Container(
             height: 245,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              itemCount: categories.length,
+              itemCount: _categories.length,
               itemBuilder: categoryItemBuilder,
             ),
           ),
@@ -140,6 +217,11 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
             child: TabBar(
               controller: _tabController,
               labelColor: Colors.black,
+              onTap: (selectedIndex) {
+                setState(() {
+                  _selectedTabIndex = selectedIndex;
+                });
+              },
               unselectedLabelColor: Color(0xFFAFB4C6),
               indicatorSize: TabBarIndicatorSize.label,
               indicatorWeight: 4,
@@ -180,15 +262,15 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
             height: 250,
             child: ListView.builder(
                 scrollDirection: Axis.vertical,
-                itemCount: notes.length,
+                itemCount: _getNoteBySelectedTab().length,
                 itemBuilder: (context, index) => NoteCard(
-                      notes[index],
+                      _getNoteBySelectedTab()[index],
                       _deleteNote,
                       _toggleImportant,
                       _togglePerformed,
                     )),
           ),
-          SizedBox(height: 10)
+          SizedBox(height: 40),
         ],
       ),
     );
