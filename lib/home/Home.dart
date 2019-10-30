@@ -146,6 +146,61 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     });
   }
 
+  void _addNote(String category, BuildContext context) {
+    Note note = Note(
+      "",
+      "",
+      category,
+      DateTime.now(),
+      false,
+      false,
+    );
+    _categories[category].add(note);
+    Navigator.pushNamed(context, "/noteDetail", arguments: {"note": note});
+  }
+
+  Future<void> _showAddCategoryDialog() {
+    TextEditingController textController = TextEditingController();
+
+    return showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text("Category Name:"),
+            content: TextField(
+              controller: textController,
+            ),
+            actions: <Widget>[
+              Container(
+                width: 200,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Color(0xFF417BFB),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: FlatButton.icon(
+                  onPressed: () {
+                    String newCategory = textController.text.toString();
+                    setState(() {
+                      _categories[newCategory] = [];
+                    });
+                    _selectedCategoryIndex =
+                        _categories.keys.toList().indexOf(newCategory);
+                    Navigator.pop(context);
+                  },
+                  icon: Icon(Icons.add_box),
+                  label: Text("Add"),
+                  textColor: Colors.white,
+                ),
+              ),
+              SizedBox(
+                width: 22,
+              ),
+            ],
+          );
+        });
+  }
+
   Widget _generateFloatingButtonIconList(int index) {
     Widget child = Container(
       height: 70.0,
@@ -154,8 +209,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       child: ScaleTransition(
         scale: CurvedAnimation(
           parent: _animationController,
-          curve: Interval(
-              0.0, 1.0 - index / _floatingButtonIcons.length / 2.0,
+          curve: Interval(0.0, 1.0 - index / _floatingButtonIcons.length / 2.0,
               curve: Curves.easeOut),
         ),
         child: FloatingActionButton(
@@ -163,7 +217,15 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           backgroundColor: Colors.teal[400],
           mini: true,
           child: Icon(_floatingButtonIcons[index], color: Colors.white),
-          onPressed: () {},
+          onPressed: () {
+            if (index == 0) {
+              _addNote(
+                  _categories.keys.toList()[_selectedCategoryIndex], context);
+            } else if (index == 1) {
+              _showAddCategoryDialog();
+            }
+            _animationController.reverse();
+          },
         ),
       ),
     );
@@ -184,9 +246,12 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   animation: _animationController,
                   builder: (BuildContext context, Widget child) {
                     return Transform(
-                      transform: new Matrix4.rotationZ(_animationController.value * 0.5 * math.pi),
+                      transform: Matrix4.rotationZ(
+                          _animationController.value * 0.5 * math.pi),
                       alignment: FractionalOffset.center,
-                      child: Icon(_animationController.isDismissed ? Icons.add : Icons.close),
+                      child: Icon(_animationController.isDismissed
+                          ? Icons.add
+                          : Icons.close),
                     );
                   },
                 ),
