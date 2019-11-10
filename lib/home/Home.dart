@@ -1,9 +1,14 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:notes/home/CategoryCard.dart';
 import 'package:notes/home/NoteCard.dart';
+import 'package:notes/services/Category.dart';
 import 'package:notes/services/Note.dart';
 import 'dart:math' as math;
 import 'Heading.dart';
+import 'package:notes/globals.dart' as globals;
+import 'package:http/http.dart' as http;
 
 class Home extends StatefulWidget {
   @override
@@ -11,7 +16,7 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> with TickerProviderStateMixin {
-  Map<String, List> _categories = {"work": [], "personal": [], "poems": []};
+  Map<Category, List<Note>> _categories = {};
   int _selectedCategoryIndex = 0;
   int _selectedTabIndex = 0;
   TabController _tabController;
@@ -22,48 +27,39 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   static const int NOTES = 0;
   static const int IMPORTANT = 1;
 
-  List _notes = [
-    Note(
-      "first note",
-      "I'm the first note and I'd like to be the longest note ever on a test",
-      "work",
-      DateTime.now(),
-      true,
-      false,
-    ),
-    Note(
-      "second note",
-      "I'm the second note",
-      "personal",
-      DateTime.now().add(
-        Duration(hours: -2),
-      ),
-      true,
-      false,
-    ),
-    Note(
-      "third note",
-      "Third note",
-      "poems",
-      DateTime.now(),
-      true,
-      false,
-    ),
-    Note(
-      "fourth note",
-      "I'm the fourth note and I'd like to be the longest note ever on a test",
-      "work",
-      DateTime.now(),
-      false,
-      false,
-    ),
-  ];
-
-  void _getNotesData() {
-    _notes.forEach((element) {
-      _categories[element.category].add(element);
+  Future<void> _getNotesData() async {
+    var categoriesJson = await http
+        .get("${globals.SERVER_ADDRESS}/category/categoryListCreate", headers: {
+      "Content-type": "application/json",
+      "Authorization": globals.token
     });
-    _notes.clear();
+    List categoryList = jsonDecode(categoriesJson.body);
+    Map firstCategoryJson = categoryList[0];
+    var notesJson = await http.get(
+        "${globals.SERVER_ADDRESS}/note/noteListCreate/${firstCategoryJson["id"]}",
+        headers: {
+          "Content-type": "application/json",
+          "Authorization": globals.token
+        });
+    List categoryNoteList = jsonDecode(notesJson.body);
+    setState(() {
+      categoryList.forEach((element) {
+        Category category =
+            Category(element["id"], element["name"], element["count"]);
+        _categories[category] = [];
+      });
+      Category firstCategory = _categories.keys.toList()[0];
+      categoryNoteList.forEach((element) {
+        Note note = Note(
+            element["id"],
+            element["title"],
+            element["body"],
+            DateTime.parse(element["date"]),
+            element["isImportant"],
+            element["isPerformed"]);
+        _categories[firstCategory].add(note);
+      });
+    });
   }
 
   List _getNoteBySelectedTab() {
@@ -85,29 +81,53 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   @override
   void initState() {
-    super.initState();
     _tabController = TabController(initialIndex: 0, length: 3, vsync: this);
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
     _getNotesData();
+    super.initState();
   }
 
   Widget _buildCategoryCard(int index, String title, int count) {
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedCategoryIndex = index;
-        });
+      onTap: () async {
+        if (_categories[_categories.keys.toList()[index]].length == 0) {
+          Category category = _categories.keys.toList()[index];
+          var notesJson = await http.get(
+              "${globals.SERVER_ADDRESS}/note/noteListCreate/${category.id}",
+              headers: {
+                "Content-type": "application/json",
+                "Authorization": globals.token
+              });
+          List categoryNoteList = jsonDecode(notesJson.body);
+          setState(() {
+            _selectedCategoryIndex = index;
+            categoryNoteList.forEach((element) {
+              Note note = Note(
+                  element["id"],
+                  element["title"],
+                  element["body"],
+                  DateTime.parse(element["date"]),
+                  element["isImportant"],
+                  element["isPerformed"]);
+              _categories[category].add(note);
+            });
+          });
+        } else {
+          setState(() {
+            _selectedCategoryIndex = index;
+          });
+        }
       },
       child: CategoryCard(index, _selectedCategoryIndex, title, count),
     );
   }
 
   Widget categoryItemBuilder(BuildContext context, int index) {
-    return _buildCategoryCard(index, _categories.keys.toList()[index],
-        _categories.values.toList()[index].length);
+    return _buildCategoryCard(index, _categories.keys.toList()[index].name,
+        _categories.keys.toList()[index].count);
   }
 
   void _deleteNote(Note note, BuildContext context) {
@@ -146,16 +166,17 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     });
   }
 
-  void _addNote(String category, BuildContext context) {
+  void _addNote(Category category, BuildContext context) {
     Note note = Note(
+      1,
       "",
       "",
-      category,
       DateTime.now(),
       false,
       false,
     );
     _categories[category].add(note);
+    //TODO send request to add note
     Navigator.pushNamed(context, "/noteDetail", arguments: {"note": note});
   }
 
@@ -179,13 +200,23 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: FlatButton.icon(
-                  onPressed: () {
-                    String newCategory = textController.text.toString();
+                  onPressed: () async {
+                    String newCategoryName = textController.text.toString();
+                    var categoryJson = await http.post(
+                        "${globals.SERVER_ADDRESS}/category/categoryListCreate",
+                        headers: {
+                          "Content-type": "application/json",
+                          "Authorization": globals.token
+                        },
+                        body: jsonEncode({"name": newCategoryName}));
+                    Map categoryMap = jsonDecode(categoryJson.body);
+                    Category category = Category(categoryMap["id"],
+                        categoryMap["name"], categoryMap["count"]);
                     setState(() {
-                      _categories[newCategory] = [];
+                      _categories[category] = [];
+                      _selectedCategoryIndex =
+                          _categories.keys.toList().indexOf(category);
                     });
-                    _selectedCategoryIndex =
-                        _categories.keys.toList().indexOf(newCategory);
                     Navigator.pop(context);
                   },
                   icon: Icon(Icons.add_box),
@@ -271,11 +302,21 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           Heading(),
           Container(
             height: 245,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _categories.length,
-              itemBuilder: categoryItemBuilder,
-            ),
+            child: _categories.isNotEmpty
+                ? ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _categories.length,
+                    itemBuilder: categoryItemBuilder,
+                  )
+                : Center(
+                    child: Text(
+                      "No Categories Yet",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
           ),
           Padding(
             padding: EdgeInsets.only(left: 15.0),
@@ -325,17 +366,27 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           SizedBox(height: 20),
           Container(
             height: 250,
-            child: ListView.builder(
-                scrollDirection: Axis.vertical,
-                itemCount: _getNoteBySelectedTab().length,
-                itemBuilder: (context, index) => NoteCard(
+            child: _categories.isNotEmpty
+                ? ListView.builder(
+                    scrollDirection: Axis.vertical,
+                    itemCount: _getNoteBySelectedTab().length,
+                    itemBuilder: (context, index) => NoteCard(
                       _getNoteBySelectedTab()[index],
                       _deleteNote,
                       _toggleImportant,
                       _togglePerformed,
-                    )),
+                    ),
+                  )
+                : Center(
+                    child: Text(
+                      "No Notes Yet",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
           ),
-          SizedBox(height: 40),
         ],
       ),
     );
