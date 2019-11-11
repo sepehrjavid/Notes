@@ -125,7 +125,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
-  Widget categoryItemBuilder(BuildContext context, int index) {
+  Widget _categoryItemBuilder(BuildContext context, int index) {
     return _buildCategoryCard(index, _categories.keys.toList()[index].name,
         _categories.keys.toList()[index].count);
   }
@@ -162,16 +162,14 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     });
   }
 
-  void _toggleImportant(Note note) {
-    setState(() {
-      note.isImportant = !note.isImportant;
-    });
+  void _toggleImportant(Note note) async {
+    await note.toggleImportant();
+    setState(() {});
   }
 
-  void _togglePerformed(Note note) {
-    setState(() {
-      note.isPerformed = !note.isPerformed;
-    });
+  void _togglePerformed(Note note) async {
+    await note.togglePerformed();
+    setState(() {});
   }
 
   void _addNote(Category category, BuildContext context) {
@@ -317,7 +315,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 ? ListView.builder(
                     scrollDirection: Axis.horizontal,
                     itemCount: _categories.length,
-                    itemBuilder: categoryItemBuilder,
+                    itemBuilder: _categoryItemBuilder,
                   )
                 : Center(
                     child: Text(

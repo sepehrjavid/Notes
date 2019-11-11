@@ -10,12 +10,14 @@ class Note {
   bool isImportant;
   bool isPerformed;
 
-  Note(this.id,
-      this.title,
-      this.body,
-      this.date,
-      this.isImportant,
-      this.isPerformed,);
+  Note(
+    this.id,
+    this.title,
+    this.body,
+    this.date,
+    this.isImportant,
+    this.isPerformed,
+  );
 
   void storeNote(int categoryId) async {
     Map json = {
@@ -63,5 +65,43 @@ class Note {
         "Authorization": globals.token
       },
     );
+  }
+
+  void toggleImportant() async {
+    Map json = {
+      "isImportant": !isImportant,
+    };
+    var response = await http.patch(
+      "${globals.SERVER_ADDRESS}/note/noteRetrieveUpdateDestroy/$id",
+      headers: {
+        "Content-type": "application/json",
+        "Authorization": globals.token
+      },
+      body: jsonEncode(json),
+    );
+
+    Map noteMap = jsonDecode(response.body);
+
+    date = DateTime.parse(noteMap["date"]);
+    isImportant = noteMap["isImportant"];
+  }
+
+  void togglePerformed() async {
+    Map json = {
+      "isPerformed": !isPerformed,
+    };
+    var response = await http.patch(
+      "${globals.SERVER_ADDRESS}/note/noteRetrieveUpdateDestroy/$id",
+      headers: {
+        "Content-type": "application/json",
+        "Authorization": globals.token
+      },
+      body: jsonEncode(json),
+    );
+
+    Map noteMap = jsonDecode(response.body);
+
+    date = DateTime.parse(noteMap["date"]);
+    isPerformed = noteMap["isPerformed"];
   }
 }
