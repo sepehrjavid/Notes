@@ -135,23 +135,31 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         _categories.values.toList()[_selectedCategoryIndex].indexOf(note);
     setState(() {
       _categories.values.toList()[_selectedCategoryIndex].remove(note);
+      _categories.keys.toList()[_selectedCategoryIndex].count -= 1;
     });
-    Scaffold.of(context).showSnackBar(SnackBar(
-      content: Text(
-        "${note.title} deleted!",
-        style: TextStyle(fontSize: 16),
-      ),
-      action: SnackBarAction(
-        label: "Undo",
-        onPressed: () {
-          setState(() {
-            _categories.values
-                .toList()[_selectedCategoryIndex]
-                .insert(index, note);
-          });
-        },
-      ),
-    ));
+    Scaffold.of(context)
+        .showSnackBar(SnackBar(
+          content: Text(
+            "${note.title} deleted!",
+            style: TextStyle(fontSize: 16),
+          ),
+          action: SnackBarAction(
+            label: "Undo",
+            onPressed: () {
+              setState(() {
+                _categories.values
+                    .toList()[_selectedCategoryIndex]
+                    .insert(index, note);
+                _categories.keys.toList()[_selectedCategoryIndex].count += 1;
+              });
+            },
+          ),
+        ))
+        .closed
+        .timeout(Duration(seconds: 4), onTimeout: () {
+      note.deleteNote();
+      return;
+    });
   }
 
   void _toggleImportant(Note note) {
@@ -168,7 +176,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   void _addNote(Category category, BuildContext context) {
     Note note = Note(
-      1,
+      null,
       "",
       "",
       DateTime.now(),
