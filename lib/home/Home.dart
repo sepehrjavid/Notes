@@ -184,8 +184,11 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       false,
     );
     _categories[category].add(note);
-    //TODO send request to add note
-    Navigator.pushNamed(context, "/noteDetail", arguments: {"note": note});
+    category.count += 1;
+    Navigator.pushNamed(context, "/noteDetail", arguments: {
+      "note": note,
+      "categoryId": _categories.keys.toList()[_selectedCategoryIndex].id,
+    });
   }
 
   Future<void> _showAddCategoryDialog() {

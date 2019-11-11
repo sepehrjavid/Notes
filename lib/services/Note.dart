@@ -10,16 +10,14 @@ class Note {
   bool isImportant;
   bool isPerformed;
 
-  Note(
-    this.id,
-    this.title,
-    this.body,
-    this.date,
-    this.isImportant,
-    this.isPerformed,
-  );
+  Note(this.id,
+      this.title,
+      this.body,
+      this.date,
+      this.isImportant,
+      this.isPerformed,);
 
-  void storeNote() async {
+  void storeNote(int categoryId) async {
     Map json = {
       "title": title,
       "body": body,
@@ -29,7 +27,7 @@ class Note {
 
     if (id == null) {
       var response = await http.post(
-        "${globals.SERVER_ADDRESS}/note/noteListCreate",
+        "${globals.SERVER_ADDRESS}/note/noteListCreate/$categoryId",
         headers: {
           "Content-type": "application/json",
           "Authorization": globals.token
@@ -42,7 +40,7 @@ class Note {
       id = noteJson["id"];
       date = DateTime.parse(noteJson["date"]);
     } else {
-      var response = await http.post(
+      var response = await http.put(
         "${globals.SERVER_ADDRESS}/note/noteRetrieveUpdateDestroy/$id",
         headers: {
           "Content-type": "application/json",

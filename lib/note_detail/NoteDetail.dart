@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:notes/services/Note.dart';
 
 class NoteDetail extends StatelessWidget {
   Map data;
-  DateFormat dateFormat = DateFormat("yyyy MMM, dd HH:mm");
+  DateFormat _dateFormat = DateFormat("yyyy MMM, dd HH:mm");
+  TextEditingController _titleTextController = TextEditingController();
+  TextEditingController _bodyTextController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     data = ModalRoute.of(context).settings.arguments;
+    Note note = data["note"];
+    int categoryId = data["categoryId"];
+    _titleTextController.text = note.title;
+    _bodyTextController.text = note.body;
+
 
     return Scaffold(
       backgroundColor: Colors.grey[300],
@@ -15,7 +23,7 @@ class NoteDetail extends StatelessWidget {
         backgroundColor: Colors.grey[300],
         elevation: 0,
         title: Text(
-          dateFormat.format(data["note"].date),
+          _dateFormat.format(note.date),
           style: TextStyle(
             fontSize: 14,
             color: Colors.grey[850],
@@ -23,7 +31,12 @@ class NoteDetail extends StatelessWidget {
         ),
         centerTitle: true,
         leading: GestureDetector(
-          onTap: () => Navigator.pop(context),
+          onTap: () async {
+            note.body = _bodyTextController.text.toString();
+            note.title = _titleTextController.text.toString();
+            await note.storeNote(categoryId);
+            Navigator.pop(context);
+          },
           child: Icon(
             Icons.arrow_back,
             color: Colors.black,
@@ -46,7 +59,7 @@ class NoteDetail extends StatelessWidget {
               ),
               maxLines: null,
               minLines: null,
-              initialValue: data["note"].title,
+              controller: _titleTextController,
             ),
             Divider(
               height: 10,
@@ -64,7 +77,7 @@ class NoteDetail extends StatelessWidget {
               ),
               maxLines: null,
               minLines: null,
-              initialValue: data["note"].body,
+              controller: _bodyTextController,
             ),
           ],
         ),
