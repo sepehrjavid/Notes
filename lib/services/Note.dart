@@ -19,7 +19,7 @@ class Note {
     this.isPerformed,
   );
 
-  void storeNote(int categoryId) async {
+  Future<void> store(int categoryId) async {
     Map json = {
       "title": title,
       "body": body,
@@ -57,7 +57,7 @@ class Note {
     }
   }
 
-  void deleteNote() async {
+  Future<void> delete() async {
     await http.delete(
       "${globals.SERVER_ADDRESS}/note/noteRetrieveUpdateDestroy/$id",
       headers: {
@@ -67,7 +67,7 @@ class Note {
     );
   }
 
-  void toggleImportant() async {
+  Future<void> toggleImportant() async {
     Map json = {
       "isImportant": !isImportant,
     };
@@ -86,7 +86,7 @@ class Note {
     isImportant = noteMap["isImportant"];
   }
 
-  void togglePerformed() async {
+  Future<void> togglePerformed() async {
     Map json = {
       "isPerformed": !isPerformed,
     };

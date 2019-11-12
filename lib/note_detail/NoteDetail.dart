@@ -4,9 +4,9 @@ import 'package:notes/services/Note.dart';
 
 class NoteDetail extends StatelessWidget {
   Map data;
-  DateFormat _dateFormat = DateFormat("yyyy MMM, dd HH:mm");
-  TextEditingController _titleTextController = TextEditingController();
-  TextEditingController _bodyTextController = TextEditingController();
+  final DateFormat _dateFormat = DateFormat("yyyy MMM, dd HH:mm");
+  final TextEditingController _titleTextController = TextEditingController();
+  final TextEditingController _bodyTextController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +34,7 @@ class NoteDetail extends StatelessWidget {
           onTap: () async {
             note.body = _bodyTextController.text.toString();
             note.title = _titleTextController.text.toString();
-            await note.storeNote(categoryId);
+            await note.store(categoryId);
             Navigator.pop(context);
           },
           child: Icon(

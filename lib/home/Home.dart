@@ -91,37 +91,44 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   }
 
   Widget _buildCategoryCard(int index, String title, int count) {
-    return GestureDetector(
-      onTap: () async {
-        if (_categories[_categories.keys.toList()[index]].length == 0) {
-          Category category = _categories.keys.toList()[index];
-          var notesJson = await http.get(
-              "${globals.SERVER_ADDRESS}/note/noteListCreate/${category.id}",
-              headers: {
-                "Content-type": "application/json",
-                "Authorization": globals.token
-              });
-          List categoryNoteList = jsonDecode(notesJson.body);
-          setState(() {
-            _selectedCategoryIndex = index;
-            categoryNoteList.forEach((element) {
-              Note note = Note(
-                  element["id"],
-                  element["title"],
-                  element["body"],
-                  DateTime.parse(element["date"]),
-                  element["isImportant"],
-                  element["isPerformed"]);
-              _categories[category].add(note);
-            });
-          });
-        } else {
-          setState(() {
-            _selectedCategoryIndex = index;
-          });
-        }
+    return Dismissible(
+      key: Key(title),
+      direction: DismissDirection.up,
+      onDismissed: (direction) {
+        _categories.keys.toList()[index].delete();
       },
-      child: CategoryCard(index, _selectedCategoryIndex, title, count),
+      child: GestureDetector(
+        onTap: () async {
+          Category category = _categories.keys.toList()[index];
+          if (_categories[category].length == 0) {
+            var notesJson = await http.get(
+                "${globals.SERVER_ADDRESS}/note/noteListCreate/${category.id}",
+                headers: {
+                  "Content-type": "application/json",
+                  "Authorization": globals.token
+                });
+            List categoryNoteList = jsonDecode(notesJson.body);
+            setState(() {
+              _selectedCategoryIndex = index;
+              categoryNoteList.forEach((element) {
+                Note note = Note(
+                    element["id"],
+                    element["title"],
+                    element["body"],
+                    DateTime.parse(element["date"]),
+                    element["isImportant"],
+                    element["isPerformed"]);
+                _categories[category].add(note);
+              });
+            });
+          } else {
+            setState(() {
+              _selectedCategoryIndex = index;
+            });
+          }
+        },
+        child: CategoryCard(index, _selectedCategoryIndex, title, count),
+      ),
     );
   }
 
@@ -140,7 +147,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     Scaffold.of(context)
         .showSnackBar(SnackBar(
           content: Text(
-            "${note.title} deleted!",
+            "${note.title} was deleted!",
             style: TextStyle(fontSize: 16),
           ),
           action: SnackBarAction(
@@ -156,8 +163,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           ),
         ))
         .closed
-        .timeout(Duration(seconds: 4), onTimeout: () {
-      note.deleteNote();
+        .timeout(Duration(seconds: 4), onTimeout: () async {
+      await note.delete();
       return;
     });
   }
@@ -304,7 +311,8 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 },
               )),
       ),
-      backgroundColor: Colors.grey[300],
+//      backgroundColor: Colors.grey[300],
+      backgroundColor: Colors.grey[800],
       body: ListView(
         children: <Widget>[
           SizedBox(height: 20),
@@ -321,6 +329,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                     child: Text(
                       "No Categories Yet",
                       style: TextStyle(
+                        color: Colors.grey[200],
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
@@ -331,7 +340,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             padding: EdgeInsets.only(left: 15.0),
             child: TabBar(
               controller: _tabController,
-              labelColor: Colors.black,
+              labelColor: Colors.grey[200],
               onTap: (selectedIndex) {
                 setState(() {
                   _selectedTabIndex = selectedIndex;
@@ -374,7 +383,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           ),
           SizedBox(height: 20),
           Container(
-            height: 250,
+            height: 285,
             child: _categories.isNotEmpty
                 ? ListView.builder(
                     scrollDirection: Axis.vertical,
@@ -390,6 +399,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                     child: Text(
                       "No Notes Yet",
                       style: TextStyle(
+                        color: Colors.grey[200],
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),

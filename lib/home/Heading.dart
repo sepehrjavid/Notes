@@ -14,12 +14,14 @@ class Heading extends StatelessWidget {
             style: TextStyle(
               fontSize: 30,
               fontWeight: FontWeight.bold,
+              color: Colors.grey[200],
             ),
           ),
           SizedBox(width: 4),
           Text(
             "by SepehrJavid",
             style: TextStyle(
+              color: Colors.grey[200],
               fontSize: 12,
             ),
           )
