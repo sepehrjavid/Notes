@@ -218,20 +218,12 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 child: FlatButton.icon(
                   onPressed: () async {
                     String newCategoryName = textController.text.toString();
-                    var categoryJson = await http.post(
-                        "${globals.SERVER_ADDRESS}/category/categoryListCreate",
-                        headers: {
-                          "Content-type": "application/json",
-                          "Authorization": globals.token
-                        },
-                        body: jsonEncode({"name": newCategoryName}));
-                    Map categoryMap = jsonDecode(categoryJson.body);
-                    Category category = Category(categoryMap["id"],
-                        categoryMap["name"], categoryMap["count"]);
+                    Category newCategory = Category(null, newCategoryName, 0);
+                    newCategory.store();
                     setState(() {
-                      _categories[category] = [];
+                      _categories[newCategory] = [];
                       _selectedCategoryIndex =
-                          _categories.keys.toList().indexOf(category);
+                          _categories.keys.toList().indexOf(newCategory);
                     });
                     Navigator.pop(context);
                   },
@@ -311,7 +303,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                 },
               )),
       ),
-//      backgroundColor: Colors.grey[300],
       backgroundColor: Colors.grey[800],
       body: ListView(
         children: <Widget>[

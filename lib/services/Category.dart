@@ -18,4 +18,18 @@ class Category {
       },
     );
   }
+
+  Future<void> store() async {
+    if (id == null) {
+      var response = await http.post(
+          "${globals.SERVER_ADDRESS}/category/categoryListCreate",
+          headers: {
+            "Content-type": "application/json",
+            "Authorization": globals.token
+          },
+          body: jsonEncode({"name": name}));
+      Map categoryMap = jsonDecode(response.body);
+      id = categoryMap["id"];
+    } else {}
+  }
 }
