@@ -98,13 +98,15 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   @override
   void initState() {
+    super.initState();
     _tabController = TabController(initialIndex: 0, length: 3, vsync: this);
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
-    _getNotesData();
-    super.initState();
+    if (globals.token != null) {
+      _getNotesData();
+    }
   }
 
   Widget _buildCategoryCard(int index, String title, int count) {

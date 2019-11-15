@@ -1,30 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:notes/globals.dart' as globals;
 
 class Heading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: 15),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisAlignment: MainAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
           Text(
-            "Notes",
+            "Welcome ${globals.fullName}",
             style: TextStyle(
-              fontSize: 30,
-              fontWeight: FontWeight.bold,
+              fontFamily: "LibreBaskerville",
+              fontSize: 20,
               color: Colors.grey[200],
             ),
           ),
-          SizedBox(width: 4),
-          Text(
-            "by SepehrJavid",
-            style: TextStyle(
-              color: Colors.grey[200],
-              fontSize: 12,
-            ),
-          )
         ],
       ),
     );

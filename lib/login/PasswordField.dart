@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
 class PasswordField extends StatelessWidget {
+  final TextEditingController _passwordTextController;
+
+  PasswordField(this._passwordTextController);
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -13,6 +17,7 @@ class PasswordField extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 10),
         child: TextField(
+          controller: _passwordTextController,
           decoration: InputDecoration(
               hintText: "Password",
               icon: Icon(Icons.vpn_key),

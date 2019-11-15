@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
 class UsernameField extends StatelessWidget {
+  final TextEditingController _usernameTextController;
+
+  UsernameField(this._usernameTextController);
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -13,12 +17,12 @@ class UsernameField extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 10),
         child: TextField(
+          controller: _usernameTextController,
           decoration: InputDecoration(
               hintText: "Username",
               icon: Icon(Icons.person),
               border: InputBorder.none,
-              focusColor: Color(0xFF417BFB)
-          ),
+              focusColor: Color(0xFF417BFB)),
         ),
       ),
     );

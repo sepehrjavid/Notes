@@ -50,11 +50,12 @@ class CategoryCard extends StatelessWidget {
             child: Text(
               count.toString(),
               style: TextStyle(
-                  color: _selectedCategoryIndex == _index
-                      ? Colors.white
-                      : Colors.black,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 28),
+                color: _selectedCategoryIndex == _index
+                    ? Colors.white
+                    : Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 28,
+              ),
             ),
           )
         ],
