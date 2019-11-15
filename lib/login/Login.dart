@@ -30,7 +30,8 @@ class _LoginState extends State<Login> with TickerProviderStateMixin {
             context: context,
             builder: (context) {
               return AlertDialog(
-//                shape:,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)),
                 backgroundColor: Colors.grey[800],
                 content: Row(
                   children: <Widget>[

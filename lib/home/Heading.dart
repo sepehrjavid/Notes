@@ -10,7 +10,7 @@ class Heading extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
           Text(
-            "Welcome ${globals.fullName}",
+            "Hi ${globals.fullName}",
             style: TextStyle(
               fontFamily: "LibreBaskerville",
               fontSize: 20,

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 class SignUpTextField extends StatelessWidget {
   final String _placeHolder;
+  TextEditingController _textController;
 
-  SignUpTextField(this._placeHolder);
+
+  SignUpTextField(this._placeHolder, this._textController);
 
   @override
   Widget build(BuildContext context) {
@@ -17,6 +19,7 @@ class SignUpTextField extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 20),
         child: TextField(
+          controller: _textController,
           decoration: InputDecoration(
               hintText: _placeHolder,
               border: InputBorder.none,
