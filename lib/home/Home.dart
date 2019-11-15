@@ -1,11 +1,13 @@
 import 'dart:convert';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:notes/home/CategoryCard.dart';
 import 'package:notes/home/NoteCard.dart';
 import 'package:notes/services/Category.dart';
 import 'package:notes/services/Note.dart';
-import 'dart:math' as math;
+import 'AddCategoryCard.dart';
+import 'AddNoteCard.dart';
 import 'Heading.dart';
 import 'package:notes/globals.dart' as globals;
 import 'package:http/http.dart' as http;
@@ -21,7 +23,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
   int _selectedTabIndex = 0;
   TabController _tabController;
   AnimationController _animationController;
-  List _floatingButtonIcons = [Icons.note_add, Icons.category];
 
   static const int PERFORMED = 2;
   static const int NOTES = 0;
@@ -34,47 +35,63 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       "Authorization": globals.token
     });
     List categoryList = jsonDecode(categoriesJson.body);
-    Map firstCategoryJson = categoryList[0];
-    var notesJson = await http.get(
-        "${globals.SERVER_ADDRESS}/note/noteListCreate/${firstCategoryJson["id"]}",
-        headers: {
-          "Content-type": "application/json",
-          "Authorization": globals.token
+    if (categoryList.length != 0) {
+      Map lastCategoryJson = categoryList.last;
+      var notesJson = await http.get(
+          "${globals.SERVER_ADDRESS}/note/noteListCreate/${lastCategoryJson["id"]}",
+          headers: {
+            "Content-type": "application/json",
+            "Authorization": globals.token
+          });
+      List categoryNoteList = jsonDecode(notesJson.body);
+      setState(() {
+        categoryList.forEach((element) {
+          Category category =
+              Category(element["id"], element["name"], element["count"]);
+          _categories[category] = [];
         });
-    List categoryNoteList = jsonDecode(notesJson.body);
-    setState(() {
-      categoryList.forEach((element) {
-        Category category =
-            Category(element["id"], element["name"], element["count"]);
-        _categories[category] = [];
+        Category lastCategory = _categories.keys.toList().last;
+        _selectedCategoryIndex =
+            _categories.keys.toList().indexOf(lastCategory);
+        categoryNoteList.forEach((element) {
+          Note note = Note(
+              element["id"],
+              element["title"],
+              element["body"],
+              DateTime.parse(element["date"]),
+              element["isImportant"],
+              element["isPerformed"]);
+          _categories[lastCategory].add(note);
+        });
       });
-      Category firstCategory = _categories.keys.toList()[0];
-      categoryNoteList.forEach((element) {
-        Note note = Note(
-            element["id"],
-            element["title"],
-            element["body"],
-            DateTime.parse(element["date"]),
-            element["isImportant"],
-            element["isPerformed"]);
-        _categories[firstCategory].add(note);
-      });
-    });
+    }
   }
 
   List _getNoteBySelectedTab() {
+    if (_categories.length == 0) {
+      return [];
+    }
     if (_selectedTabIndex == PERFORMED) {
       return _categories.values
           .toList()[_selectedCategoryIndex]
           .where((element) => element.isPerformed)
-          .toList();
+          .toList()
+            ..sort((a, b) {
+              return -a.date.compareTo(b.date);
+            });
     } else if (_selectedTabIndex == IMPORTANT) {
       return _categories.values
           .toList()[_selectedCategoryIndex]
           .where((element) => element.isImportant)
-          .toList();
+          .toList()
+            ..sort((a, b) {
+              return -a.date.compareTo(b.date);
+            });
     } else if (_selectedTabIndex == NOTES) {
-      return _categories.values.toList()[_selectedCategoryIndex];
+      return _categories.values.toList()[_selectedCategoryIndex]
+        ..sort((a, b) {
+          return -a.date.compareTo(b.date);
+        });
     }
     return [];
   }
@@ -95,7 +112,14 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
       key: Key(title),
       direction: DismissDirection.up,
       onDismissed: (direction) {
-        _categories.keys.toList()[index].delete();
+        if (index == _selectedCategoryIndex) {
+          Category category = _categories.keys.toList()[index];
+          setState(() {
+            _categories.remove(category);
+            _selectedCategoryIndex = _categories.keys.toList().length - 1;
+          });
+          category.delete();
+        }
       },
       child: GestureDetector(
         onTap: () async {
@@ -132,7 +156,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     );
   }
 
-  Widget _categoryItemBuilder(BuildContext context, int index) {
+  Widget _categoryItemBuilder(int index) {
     return _buildCategoryCard(index, _categories.keys.toList()[index].name,
         _categories.keys.toList()[index].count);
   }
@@ -179,7 +203,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
     setState(() {});
   }
 
-  void _addNote(Category category, BuildContext context) {
+  void _addNote(Category category) {
     Note note = Note(
       null,
       "",
@@ -198,7 +222,6 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   Future<void> _showAddCategoryDialog() {
     TextEditingController textController = TextEditingController();
-
     return showDialog(
         context: context,
         builder: (context) {
@@ -240,69 +263,18 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         });
   }
 
-  Widget _generateFloatingButtonIconList(int index) {
-    Widget child = Container(
-      height: 70.0,
-      width: 56.0,
-      alignment: FractionalOffset.topCenter,
-      child: ScaleTransition(
-        scale: CurvedAnimation(
-          parent: _animationController,
-          curve: Interval(0.0, 1.0 - index / _floatingButtonIcons.length / 2.0,
-              curve: Curves.easeOut),
-        ),
-        child: FloatingActionButton(
-          heroTag: null,
-          backgroundColor: Colors.teal[400],
-          mini: true,
-          child: Icon(_floatingButtonIcons[index], color: Colors.white),
-          onPressed: () {
-            if (index == 0) {
-              _addNote(
-                  _categories.keys.toList()[_selectedCategoryIndex], context);
-            } else if (index == 1) {
-              _showAddCategoryDialog();
-            }
-            _animationController.reverse();
-          },
-        ),
-      ),
+  Widget _noteGenerator(int index) {
+    return NoteCard(
+      _getNoteBySelectedTab()[index],
+      _deleteNote,
+      _toggleImportant,
+      _togglePerformed,
     );
-    return child;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: List.generate(
-                _floatingButtonIcons.length, _generateFloatingButtonIconList)
-            .toList()
-              ..add(FloatingActionButton(
-                heroTag: null,
-                child: AnimatedBuilder(
-                  animation: _animationController,
-                  builder: (BuildContext context, Widget child) {
-                    return Transform(
-                      transform: Matrix4.rotationZ(
-                          _animationController.value * 0.5 * math.pi),
-                      alignment: FractionalOffset.center,
-                      child: Icon(_animationController.isDismissed
-                          ? Icons.add
-                          : Icons.close),
-                    );
-                  },
-                ),
-                onPressed: () {
-                  if (_animationController.isDismissed) {
-                    _animationController.forward();
-                  } else {
-                    _animationController.reverse();
-                  }
-                },
-              )),
-      ),
       backgroundColor: Colors.grey[800],
       body: ListView(
         children: <Widget>[
@@ -310,22 +282,13 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           Heading(),
           Container(
             height: 245,
-            child: _categories.isNotEmpty
-                ? ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _categories.length,
-                    itemBuilder: _categoryItemBuilder,
-                  )
-                : Center(
-                    child: Text(
-                      "No Categories Yet",
-                      style: TextStyle(
-                        color: Colors.grey[200],
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: List.generate(_categories.length, _categoryItemBuilder)
+                  .reversed
+                  .toList()
+                    ..insert(0, AddCategoryCard(_showAddCategoryDialog)),
+            ),
           ),
           Padding(
             padding: EdgeInsets.only(left: 15.0),
@@ -375,27 +338,19 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           SizedBox(height: 20),
           Container(
             height: 285,
-            child: _categories.isNotEmpty
-                ? ListView.builder(
-                    scrollDirection: Axis.vertical,
-                    itemCount: _getNoteBySelectedTab().length,
-                    itemBuilder: (context, index) => NoteCard(
-                      _getNoteBySelectedTab()[index],
-                      _deleteNote,
-                      _toggleImportant,
-                      _togglePerformed,
-                    ),
-                  )
-                : Center(
-                    child: Text(
-                      "No Notes Yet",
-                      style: TextStyle(
-                        color: Colors.grey[200],
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+            child: ListView(
+              scrollDirection: Axis.vertical,
+              children:
+                  List.generate(_getNoteBySelectedTab().length, _noteGenerator)
+                      .toList()
+                        ..insert(
+                            0,
+                            AddNoteCard(
+                              _addNote,
+                              _selectedCategoryIndex,
+                              _categories,
+                            )),
+            ),
           ),
         ],
       ),
